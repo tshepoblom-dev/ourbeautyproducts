@@ -1,0 +1,98 @@
+# ------------------------------------------------------------
+# Security: keep lead data, SMTP settings, the mail library
+# and project notes out of public reach
+# ------------------------------------------------------------
+Options -Indexes
+AddDefaultCharset utf-8
+
+<FilesMatch "^(.*\.csv|register-config(\.example)?\.php|mail-config(\.example)?\.php|PHPMailer\.php|SMTP\.php|Exception\.php|LICENSE|.*\.md|.*\.gs|\.gitignore|\.user\.ini)$">
+  Require all denied
+</FilesMatch>
+RedirectMatch 403 ^/phpmailer/
+RedirectMatch 403 ^/partials/
+RedirectMatch 403 ^/setup/
+
+# ------------------------------------------------------------
+# Redirects: www -> non-www, http -> https, /index.html -> /
+# ------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  RewriteCond %{THE_REQUEST} \s/index\.html[\s?]
+  RewriteRule ^index\.html$ / [L,R=301]
+
+  # Clean URLs for the registration pages
+  RewriteCond %{THE_REQUEST} \s/register\.php[\s?]
+  RewriteRule ^register\.php$ /register [L,R=301,QSA]
+  RewriteCond %{THE_REQUEST} \s/thank-you\.php[\s?]
+  RewriteRule ^thank-you\.php$ /thank-you [L,R=301]
+  RewriteRule ^register/?$ register.php [L,QSA]
+  RewriteRule ^thank-you/?$ thank-you.php [L]
+</IfModule>
+
+# ------------------------------------------------------------
+# Content types
+# ------------------------------------------------------------
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType image/svg+xml             .svg
+  AddType font/woff2                .woff2
+</IfModule>
+
+# ------------------------------------------------------------
+# Compression (Brotli where the host supports it, else gzip)
+# ------------------------------------------------------------
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/xml application/javascript application/json application/manifest+json application/xml image/svg+xml
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml application/javascript application/json application/manifest+json application/xml image/svg+xml
+</IfModule>
+
+# ------------------------------------------------------------
+# Caching: HTML always revalidates; fonts never change; icons
+# and images for a month
+# ------------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault                          "access plus 1 week"
+  ExpiresByType text/html                 "access plus 0 seconds"
+  ExpiresByType application/json          "access plus 0 seconds"
+  ExpiresByType application/xml           "access plus 1 day"
+  ExpiresByType text/plain                "access plus 1 day"
+  ExpiresByType application/manifest+json "access plus 1 week"
+  ExpiresByType font/woff2                "access plus 1 year"
+  ExpiresByType image/svg+xml             "access plus 1 month"
+  ExpiresByType image/png                 "access plus 1 month"
+  ExpiresByType image/jpeg                "access plus 1 month"
+  ExpiresByType image/webp                "access plus 1 month"
+  ExpiresByType image/avif                "access plus 1 month"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|php)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.woff2$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # Pages that carry a one-time token or personal state must never be cached
+  <FilesMatch "^(register|thank-you|register-submit)\.php$">
+    Header set Cache-Control "no-store, max-age=0"
+  </FilesMatch>
+
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+  # Turn on only once https:// works on the bare domain AND every subdomain you use:
+  # Header always set Strict-Transport-Security "max-age=31536000"
+</IfModule>

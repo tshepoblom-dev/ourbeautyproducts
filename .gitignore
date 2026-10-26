@@ -1,0 +1,8 @@
+# Secrets and personal data: never commit these
+register-config.php
+mail-config.php
+*.csv
+# Local/testing leftovers
+.DS_Store
+*.log
+*.zip

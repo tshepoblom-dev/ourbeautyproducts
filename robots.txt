@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /thank-you
+Disallow: /register-submit.php
+Disallow: /setup/
+
+Sitemap: https://ourbeautyproducts.co.za/sitemap.xml
